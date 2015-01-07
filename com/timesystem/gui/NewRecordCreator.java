@@ -1,18 +1,19 @@
 package com.timesystem.gui;
 
+import com.timesystem.cont.TimeFunctions;
 import com.timesystem.gui.Panels.adminPane;
 import com.timesystem.mod.Databasedat;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.security.Timestamp;
-import java.util.Date;
+import java.sql.Timestamp;
+import java.text.ParseException;
 
 /**
  * Created by dlaird on 12/13/14.
  */
-public class NewRecordCreator {
+public class NewRecordCreator extends JFrame {
     private JTextField nameField;
     private JTextField startTimeField;
     private JTextField stopTimeField;
@@ -28,16 +29,17 @@ public class NewRecordCreator {
 
 
     public NewRecordCreator(final adminPane adminPane) {
-        final JFrame frame = new JFrame("NewRecordCreator");
-        frame.setContentPane(recordCreatorPanel);
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(300, 225);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        setTitle("Create Record");
+        setContentPane(recordCreatorPanel);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setSize(300, 225);
+        setLocationRelativeTo(null);
+        setVisible(true);
 
-        String timestamp = new java.sql.Timestamp(System.currentTimeMillis()).toString();
-        startTimeField.setText(timestamp);
-        stopTimeField.setText(timestamp);
+        Timestamp timestamp = new java.sql.Timestamp(System.currentTimeMillis());
+
+        startTimeField.setText(TimeFunctions.convertTimestamp(timestamp));
+        stopTimeField.setText(TimeFunctions.convertTimestamp(timestamp));
 
 
         //Action listeners
@@ -45,17 +47,30 @@ public class NewRecordCreator {
             @Override
             public void actionPerformed(ActionEvent e) {
                 name = nameField.getText();
-                inTime = startTimeField.getText();
-                outTime = stopTimeField.getText();
+
+                //Try and parse times into timestamps
+                try {
+                    inTime = TimeFunctions.getTimestamp(startTimeField.getText());
+                    outTime = TimeFunctions.getTimestamp(stopTimeField.getText());
+                } catch (ParseException p) {
+                    p.printStackTrace();
+                }
+
                 note = noteField.getText();
 
-                Databasedat.getInstance().createCompleteRecord(name,inTime,outTime,note);
+                Databasedat.getInstance().createCompleteRecord(name, inTime, outTime, note);
 
                 adminPane.reloadTableModel();
 
-                frame.dispose();
+                dispose();
             }
         });
 
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
+        });
     }
 }

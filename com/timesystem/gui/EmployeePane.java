@@ -1,12 +1,10 @@
 package com.timesystem.gui;
 
-import com.timesystem.EmployeeData;
 import com.timesystem.mod.Databasedat;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.Connection;
 
 public class EmployeePane {
 
@@ -16,7 +14,6 @@ public class EmployeePane {
     private JButton addEmployeeButton;
     private JPanel employeePanel;
     private Databasedat databasedat = Databasedat.getInstance();
-    private EmployeeData employeeData;
 
     //Table Data
     private JTable employeeTable;
@@ -25,10 +22,9 @@ public class EmployeePane {
     private JPopupMenu tableMenu;
 
 
-    public EmployeePane(Connection connection) {
-        employeeData = new EmployeeData(connection);
+    public EmployeePane() {
 
-        employeeTable.setModel(databasedat.buildEmployeeTableModel());
+        employeeTable.setModel(databasedat.builEmployeesTableModel());
 
         tableMenu = new JPopupMenu();
         employeeTable.setComponentPopupMenu(tableMenu);
@@ -104,7 +100,7 @@ public class EmployeePane {
             email = "";
         }
 
-        employeeData.updateEmployeeRecord(rowId, name, pin, manager, email.toString());
+        databasedat.updateEmployeeRecord(rowId, name, pin, manager, email.toString());
         System.out.println("RowID: " + rowId + " Name: " + name + " Pin: " + pin);
     }
 
@@ -124,7 +120,7 @@ public class EmployeePane {
                 email = "";
             }
 
-            employeeData.updateEmployeeRecord(rowId, name, pin, manager, email.toString());
+            databasedat.updateEmployeeRecord(rowId, name, pin, manager, email.toString());
             System.out.println("RowID: " + rowId + " Name: " + name + " Pin: " + pin);
         }
     }
@@ -138,7 +134,7 @@ public class EmployeePane {
             System.out.println("Yes button clicked");
             int row = employeeTable.getSelectedRow();
             System.out.println("Deleting Record: " + employeeTable.getValueAt(row, 0));
-            employeeData.deleteRecord(employeeTable.getValueAt(row, 0).toString());
+            databasedat.deleteEmployeeRecord(employeeTable.getValueAt(row, 0).toString());
             reloadTableModel();
         } else if (response == JOptionPane.CLOSED_OPTION) {
             System.out.println("JOptionPane closed");
@@ -146,7 +142,7 @@ public class EmployeePane {
     }
 
     public void reloadTableModel() {
-        employeeTable.setModel(databasedat.buildEmployeeTableModel());
+        employeeTable.setModel(databasedat.builEmployeesTableModel());
     }
 
     public JPanel getPanel() {

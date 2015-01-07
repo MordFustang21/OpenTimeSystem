@@ -33,7 +33,6 @@ public class ServerProp {
         if (new File(timeManager).exists()) {
             try {
                 timeStream = new FileInputStream(timeManager);
-
             } catch (IOException i) {
                 i.printStackTrace();
             }
@@ -161,39 +160,44 @@ public class ServerProp {
     }
 
     public String getStopDate() {
-        try {
-            prop.load(timeStream);
+        if (timeStream != null) {
+            try {
+                prop.load(timeStream);
 
-            String stopDate = prop.getProperty("stopDate");
-            System.err.println(stopDate);
-            if(stopDate == null || stopDate.equals("")){
-                return getCurrentDate();
-            } else {
-                return stopDate;
+                String stopDate = prop.getProperty("stopDate");
+                System.err.println(stopDate);
+                if (stopDate == null || stopDate.equals("")) {
+                    return getCurrentDate();
+                } else {
+                    return stopDate;
+                }
+            } catch (IOException i) {
+                i.printStackTrace();
             }
-        } catch (IOException i) {
-            i.printStackTrace();
+        } else {
+            return getCurrentDate();
         }
-
         return getCurrentDate();
     }
 
     public String getStartDate() {
-        try {
-            prop.load(timeStream);
+        if (timeStream != null) {
+            try {
+                prop.load(timeStream);
+                String startDate = prop.getProperty("startDate");
+                System.err.println(startDate);
+                if (startDate == null || startDate.equals("")) {
+                    return getCurrentDate();
+                } else {
+                    return startDate;
+                }
 
-            String startDate = prop.getProperty("startDate");
-            System.err.println(startDate);
-            if(startDate == null || startDate.equals("")){
-                return getCurrentDate();
-            } else {
-                return startDate;
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            return getCurrentDate();
         }
-
         return getCurrentDate();
     }
 

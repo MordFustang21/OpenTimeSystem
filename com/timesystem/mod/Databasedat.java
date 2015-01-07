@@ -1,10 +1,13 @@
 package com.timesystem.mod;
 
 
+import com.timesystem.cont.TimeFunctions;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import java.sql.*;
+import java.text.ParseException;
 import java.util.Vector;
 
 public class Databasedat {
@@ -30,7 +33,7 @@ public class Databasedat {
     //Handle employee information
     public String getName(String pin) {
         Statement getName = null;
-        String getNameQuery = "SELECT Name FROM Demployee WHERE pin = '" + pin + "'";
+        String getNameQuery = "SELECT Name FROM Employees WHERE pin = '" + pin + "'";
         System.out.println("Running getName query " + getNameQuery);
 
 
@@ -40,7 +43,7 @@ public class Databasedat {
             getNameResult.next();
             return getNameResult.getString("Name");
         } catch (SQLException s) {
-            System.out.println(s);
+            s.printStackTrace();
         } finally {
             if (getName != null) {
                 try {
@@ -63,7 +66,7 @@ public class Databasedat {
         int LOGIN_FAILED = 0;
         //Get username AND password
         Statement getAdmin = null;
-        String getAdminQuery = "SELECT Name, pin, manager FROM Demployee WHERE Name = '" + username + "' AND pin = '" + password + "'";
+        String getAdminQuery = "SELECT Name, pin, manager FROM Employees WHERE Name = '" + username + "' AND pin = '" + password + "'";
 
         try {
             getAdmin = connection.createStatement();
@@ -98,7 +101,7 @@ public class Databasedat {
     public int checkForIn(String username) {
         //Get username AND password
         Statement getAdmin = null;
-        String getAdminQuery = "SELECT COUNT(*) count FROM Dtime WHERE Name = '" + username + "' AND outTime IS null AND inTime > CONVERT(date, GetDate())";
+        String getAdminQuery = "SELECT COUNT(*) count FROM Timerecords WHERE Name = '" + username + "' AND outTime IS null AND inTime > CONVERT(date, GetDate())";
 
         try {
             getAdmin = connection.createStatement();
@@ -117,7 +120,7 @@ public class Databasedat {
                 try {
                     getAdmin.close();
                 } catch (SQLException s) {
-
+                    s.printStackTrace();
                 }
             }
         }
@@ -128,7 +131,7 @@ public class Databasedat {
     public DefaultComboBoxModel<String> getEmployeeList(DefaultComboBoxModel<String> employeeList) {
         //Get username AND password
         Statement getEmployeeList = null;
-        String getEmployeeListQuery = "SELECT distinct name FROM Dtime";
+        String getEmployeeListQuery = "SELECT distinct name FROM Timerecords";
 
         try {
             getEmployeeList = connection.createStatement();
@@ -158,9 +161,9 @@ public class Databasedat {
         Statement writeTimeStatement = null;
         String writeTimeQuery = null;
         if (state.equals("IN")) {
-            writeTimeQuery = "INSERT INTO Dtime (name, inTime) VALUES ('" + name + "', GETDATE())";
+            writeTimeQuery = "INSERT INTO Timerecords (name, intime) VALUES ('" + name + "', GETDATE())";
         } else {
-            writeTimeQuery = "INSERT INTO Dtime (name, outTime) VALUES ('" + name + "', GETDATE())";
+            writeTimeQuery = "INSERT INTO Timerecords (name, outTime) VALUES ('" + name + "', NULL, GETDATE())";
         }
 
         try {
@@ -185,7 +188,7 @@ public class Databasedat {
         PreparedStatement writeTimeStatement = null;
         String writeTimeQuery = null;
 
-        writeTimeQuery = "INSERT INTO Dtime (name, inTime, outTime, Notes) VALUES (?,?,?,?)";
+        writeTimeQuery = "INSERT INTO Timerecords (name, inTime, outTime, Notes) VALUES (?,?,?,?)";
 
         try {
             System.out.println(writeTimeQuery);
@@ -212,8 +215,8 @@ public class Databasedat {
 
     public String outTime(String name, String timeMil, String state) {
         Statement writeTimeStatement = null;
-        //String writeOutQuery = "INSERT INTO Dtime (name, time, state) VALUES ('" + name + "','" + timeMil + "','" + state + "')";
-        String writeOutQuery = "UPDATE dtime SET outTime = GETDATE() WHERE name = '" + name + "' AND outTime IS NULL AND inTime > CONVERT(date, GetDate())";
+        //String writeOutQuery = "INSERT INTO Timerecords (name, time, state) VALUES ('" + name + "','" + timeMil + "','" + state + "')";
+        String writeOutQuery = "UPDATE Timerecords SET outTime = GETDATE() WHERE name = '" + name + "' AND outTime IS NULL AND inTime > CONVERT(date, GetDate())";
 
 
         try {
@@ -239,9 +242,9 @@ public class Databasedat {
         Statement writeTimeStatement = null;
         String updateTimeQuery;
         if (outTime.equals("NULL")) {
-            updateTimeQuery = "UPDATE dtime SET outTime = " + outTime + ", inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowid + "'";
+            updateTimeQuery = "UPDATE Timerecords SET outTime = " + outTime + ", inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowid + "'";
         } else {
-            updateTimeQuery = "UPDATE dtime SET outTime = '" + outTime + "', inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowid + "'";
+            updateTimeQuery = "UPDATE Timerecords SET outTime = '" + outTime + "', inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowid + "'";
         }
 
         try {
@@ -273,11 +276,16 @@ public class Databasedat {
             System.out.println(numberOfRows);
             for (int i = 0; i < numberOfRows; i++) {
                 String rowId = timeModel.getValueAt(i, 0).toString();
-                String inTime = timeModel.getValueAt(i, 2).toString();
 
+                Object inTime = timeModel.getValueAt(i, 2);
                 Object outTime = timeModel.getValueAt(i, 3);
-                if (outTime != null) {
-                    outTime = outTime.toString();
+                if (inTime != null && outTime != null) {
+                    try {
+                        inTime = TimeFunctions.convertTimestamp(inTime.toString());
+                        outTime = TimeFunctions.convertTimestamp(outTime.toString());
+                    } catch (ParseException p) {
+                        p.printStackTrace();
+                    }
                 } else {
                     outTime = "NULL";
                 }
@@ -292,9 +300,9 @@ public class Databasedat {
                 //System.out.println("RowID: " + rowId + " inTime: " + inTime + " outTime: " + outTime + "Note: " + note);
 
                 if (outTime.equals("NULL")) {
-                    statement.addBatch("UPDATE dtime SET outTime = " + outTime + ", inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowId + "'");
+                    statement.addBatch("UPDATE Timerecords SET outTime = " + outTime + ", inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowId + "'");
                 } else {
-                    statement.addBatch("UPDATE dtime SET outTime = '" + outTime + "', inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowId + "'");
+                    statement.addBatch("UPDATE Timerecords SET outTime = '" + outTime + "', inTime = '" + inTime + "', Notes = '" + note + "' WHERE recordId = '" + rowId + "'");
                 }
             }
 
@@ -309,7 +317,7 @@ public class Databasedat {
 
     public void deleteRecord(String rowid) {
         Statement deleteTimeStatement = null;
-        String deleteRecordQuery = "delete FROM Dtime WHERE recordId = '" + rowid + "'";
+        String deleteRecordQuery = "delete FROM Timerecords WHERE recordId = '" + rowid + "'";
 
 
         try {
@@ -331,7 +339,7 @@ public class Databasedat {
 
     public void addEmployee(String name, String pin, int manager, String email) {
         Statement writeTimeStatement = null;
-        String writeTimeQuery = "INSERT INTO Demployee (name, pin, manager, email) VALUES ('" + name + "', '" + pin + "', '" + manager + "', '" + email + "')";
+        String writeTimeQuery = "INSERT INTO Employees (name, pin, manager, email) VALUES ('" + name + "', '" + pin + "', '" + manager + "', '" + email + "')";
 
         try {
             System.out.println(writeTimeQuery);
@@ -350,25 +358,91 @@ public class Databasedat {
         }
     }
 
-    public DefaultTableModel buildEmployeeTimeModel(String inTime, String outTime) {
-        String getEmployeeTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime, Notes FROM dtime WHERE CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' or outTime IS null or inTime IS null ORDER BY inTime DESC";
+    public void updateEmployeeRecord(String rowid, String name, String pin, int manager, String email) {
+        Statement writeTimeStatement = null;
+        String updateTimeQuery = "update Employees set Name = '" + name + "', pin = '" + pin + "', Manager = '" + manager + "', email = '" + email + "' where employeeId = '" + rowid + "'";
 
-        return buildModel(getEmployeeTime);
+        try {
+            writeTimeStatement = connection.createStatement();
+            writeTimeStatement.executeUpdate(updateTimeQuery);
+        } catch (SQLException s) {
+            System.out.println(updateTimeQuery);
+            System.out.println(s.getMessage());
+        } finally {
+            if (writeTimeStatement != null) {
+                try {
+                    writeTimeStatement.close();
+                } catch (SQLException s) {
+                    System.out.println(s.getMessage());
+                }
+            }
+        }
     }
 
-    public DefaultTableModel buildEmployeeSepecificTimeModel(String name, String inTime, String outTime) {
-        String getEmployeeSpecificTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime FROM dtime WHERE CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' OR outTime IS NULL OR inTime IS NULL AND name = '" + name + "' ORDER BY outTime DESC";
+    public void deleteEmployeeRecord(String rowid) {
+        Statement deleteTimeStatement = null;
+        String deleteRecordQuery = "delete from Employees where employeeId = '" + rowid + "'";
+
+
+        try {
+            deleteTimeStatement = connection.createStatement();
+            deleteTimeStatement.executeUpdate(deleteRecordQuery);
+        } catch (SQLException s) {
+            System.out.println(deleteRecordQuery);
+            System.out.println(s.getMessage());
+        } finally {
+            if (deleteTimeStatement != null) {
+                try {
+                    deleteTimeStatement.close();
+                } catch (SQLException s) {
+                    System.out.println(s.getMessage());
+                }
+            }
+        }
+    }
+
+    public DefaultTableModel getEmployeeTimeModel(String inTime, String outTime) {
+        String getEmployeeTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime, Notes FROM Timerecords WHERE CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' or outTime IS null or inTime IS null ORDER BY inTime DESC";
+
+        DefaultTableModel timeTable = buildModel(getEmployeeTime);
+        int rowCount = timeTable.getRowCount();
+        for (int i = 0; i < rowCount; i++) {
+            //Load timestamps to string
+            String originalIn = null;
+            String originalOut = null;
+
+            //set converted values
+            try {
+                if (timeTable.getValueAt(i, 2) != null) {
+                    originalIn = timeTable.getValueAt(i, 2).toString();
+                    timeTable.setValueAt(TimeFunctions.convertTimestamp(originalIn), i, 2);
+                }
+
+                if (timeTable.getValueAt(i, 3) != null) {
+                    originalOut = timeTable.getValueAt(i, 3).toString();
+                    timeTable.setValueAt(TimeFunctions.convertTimestamp(originalOut), i, 3);
+                }
+            } catch (ParseException p) {
+                p.printStackTrace();
+            }
+        }
+        //Return modified table
+        return timeTable;
+    }
+
+    public DefaultTableModel getSpecificEmployeeModel(String name, String inTime, String outTime) {
+        String getEmployeeSpecificTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime FROM Timerecords WHERE CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' OR outTime IS NULL OR inTime IS NULL AND name = '" + name + "' ORDER BY outTime DESC";
 
         return buildModel(getEmployeeSpecificTime);
     }
 
-    public DefaultTableModel buildEmployeeTableModel() {
-        String getEmployeeTable = "SELECT employeeid, Name, pin, Manager, email  FROM Demployee";
+    public DefaultTableModel builEmployeesTableModel() {
+        String getEmployeeTable = "SELECT employeeid, Name, pin, Manager, email  FROM Employees";
         return buildModel(getEmployeeTable);
     }
 
     public DefaultTableModel buildEmailModel() {
-        String getAllTimeQuery = "SELECT Name, email FROM Demployee";
+        String getAllTimeQuery = "SELECT Name, email FROM Employees";
         return buildModel(getAllTimeQuery);
     }
 
@@ -401,7 +475,12 @@ public class Databasedat {
             return new DefaultTableModel(data, columnNames);
         } catch (SQLException s) {
             s.printStackTrace();
+            return null;
         }
-        return null;
+    }
+
+    public DefaultTableModel connectionTestQuery() {
+        return buildModel("select 1 from Timerecords");
+
     }
 }

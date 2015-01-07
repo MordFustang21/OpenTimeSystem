@@ -1,6 +1,7 @@
 package com.timesystem;
 
 import com.timesystem.gui.PinScreen;
+import com.timesystem.mod.DatabaseCreater;
 
 import javax.swing.*;
 
@@ -17,6 +18,11 @@ public class TimeMain {
         } catch (UnsupportedLookAndFeelException e) {
             e.printStackTrace();
         }
-        new PinScreen();
+
+        if (args.length == 0) {
+            new PinScreen();
+        } else if (args[0].equals("-new")) {
+            new DatabaseCreater().create(args[1], args[2]);
+        }
     }
 }

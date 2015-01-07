@@ -25,7 +25,6 @@ public class adminPane extends JPanel {
     private JTextField dateStart;
     private JTextField dateStop;
     private ServerProp serverProp = new ServerProp();
-    public TimeFunctions timeFunctions = new TimeFunctions();
 
     public adminPane(int loginType, String user) {
         databasedat = Databasedat.getInstance();
@@ -37,19 +36,13 @@ public class adminPane extends JPanel {
     public void loadUI() {
         setLayout(new BorderLayout());
         if (loginType == 1) {
-            DefaultTableModel defaultTableModel = databasedat.buildEmployeeSepecificTimeModel(user, serverProp.getStartDate(), serverProp.getStopDate());
+            DefaultTableModel defaultTableModel = databasedat.getSpecificEmployeeModel(user, serverProp.getStartDate(), serverProp.getStopDate());
             employeeTimeTable = new JTable(defaultTableModel);
             employeeTimeTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            //Set time function data
-            timeFunctions.setTableModel(employeeTimeTable.getModel());
-            timeFunctions.setJTable(employeeTimeTable);
         } else {
-            DefaultTableModel defaultTableModel = databasedat.buildEmployeeTimeModel(serverProp.getStartDate(), serverProp.getStopDate());
+            DefaultTableModel defaultTableModel = databasedat.getEmployeeTimeModel(serverProp.getStartDate(), serverProp.getStopDate());
             employeeTimeTable = new JTable(defaultTableModel);
             employeeTimeTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            //Set time function data
-            timeFunctions.setTableModel(employeeTimeTable.getModel());
-            timeFunctions.setJTable(employeeTimeTable);
         }
 
         JScrollPane scrollTable = new JScrollPane(employeeTimeTable, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -64,8 +57,7 @@ public class adminPane extends JPanel {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     reloadTableModel();
-                    timeFunctions.setTableModel(employeeTimeTable.getModel());
-                    totalHoursLabel.setText(timeFunctions.calculateTotalHours(false));
+                    totalHoursLabel.setText(TimeFunctions.calculateTotalHours(false, employeeTimeTable));
                 }
             });
             add(employeeList, BorderLayout.NORTH);
@@ -105,24 +97,6 @@ public class adminPane extends JPanel {
                     runExport();
                 }
             });
-            JMenuItem test = new JMenuItem("Test");
-            test.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-
-                    TableModel testModel = employeeTimeTable.getModel();
-                    int numberofColumns = testModel.getColumnCount();
-                    int selectedRow = employeeTimeTable.getSelectedRow();
-                    for (int i = 0; i < numberofColumns; i++) {
-
-                        if (testModel.getValueAt(selectedRow, i) != null) {
-                            System.out.println("Value: " + testModel.getValueAt(selectedRow, i).toString());
-                        }
-                    }
-
-                }
-            });
-            tableMenu.add(test);
         }
         //End right click options
 
@@ -207,7 +181,7 @@ public class adminPane extends JPanel {
                     serverProp.saveDateRange(dateStart.getText(), dateStop.getText());
                     reloadTableModel();
 
-                    totalHoursLabel.setText(timeFunctions.calculateTotalHours(false));
+                    totalHoursLabel.setText(TimeFunctions.calculateTotalHours(false, employeeTimeTable));
                 }
             });
 
@@ -227,7 +201,7 @@ public class adminPane extends JPanel {
         getTotalHours.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                totalHoursLabel.setText(timeFunctions.calculateTotalHours(false));
+                totalHoursLabel.setText(TimeFunctions.calculateTotalHours(false, employeeTimeTable));
             }
         });
 
@@ -235,7 +209,7 @@ public class adminPane extends JPanel {
         getSelectedHours.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                totalHoursLabel.setText(timeFunctions.calculateTotalHours(true));
+                totalHoursLabel.setText(TimeFunctions.calculateTotalHours(true, employeeTimeTable));
             }
         });
         optionsPanel.add(getTotalHours);
@@ -249,21 +223,21 @@ public class adminPane extends JPanel {
         //Add scroll panel to main panel
         add(optionScroll, BorderLayout.LINE_START);
 
-        totalHoursLabel.setText(timeFunctions.calculateTotalHours(false));
+        totalHoursLabel.setText(TimeFunctions.calculateTotalHours(false, employeeTimeTable));
     }
 
     public void updateSelectedRow() {
         int row = employeeTimeTable.getSelectedRow();
         String rowId = employeeTimeTable.getValueAt(row, 0).toString();
-        String inTime = employeeTimeTable.getValueAt(row, 2).toString();
+
+        Object inTime = employeeTimeTable.getValueAt(row, 2);
         Object outTime = employeeTimeTable.getValueAt(row, 3);
-        Object note = employeeTimeTable.getValueAt(row, 5);
-        if (outTime == null || outTime.toString().isEmpty()) {
-            outTime = "NULL";
-        } else {
+        if (inTime != null && outTime != null) {
+            inTime = inTime.toString();
             outTime = outTime.toString();
         }
 
+        Object note = employeeTimeTable.getValueAt(row, 5);
         if (note == null || note.toString().isEmpty()) {
             note = "";
         } else {
@@ -271,7 +245,7 @@ public class adminPane extends JPanel {
         }
 
         System.out.println("Value of note = " + note.toString());
-        databasedat.updateTime(rowId, inTime, outTime.toString(), note.toString());
+        databasedat.updateTime(rowId, inTime.toString(), outTime.toString(), note.toString());
         System.out.println("RowID: " + rowId + " inTime: " + inTime + " outTime: " + outTime);
         employeeTimeTable.setValueAt("Data Changed", row, 4);
     }
@@ -286,7 +260,16 @@ public class adminPane extends JPanel {
                 JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (response == JOptionPane.YES_OPTION) {
             int row = employeeTimeTable.getSelectedRow();
-            System.out.println("Deleting Record: " + employeeTimeTable.getValueAt(row, 0));
+
+            //TODO: Broken
+//            //Multiple row delete
+//            for (int i = 0; i < row.length; i++) {
+//                System.out.println("Deleting Record: " + employeeTimeTable.getModel().getValueAt(row[i], 0));
+//                //databasedat.deleteRecord(employeeTimeTable.getValueAt(row[i], 0).toString());
+//                ((DefaultTableModel) employeeTimeTable.getModel()).removeRow(row[i]);
+//            }
+
+            System.out.println("Deleting Record: " + employeeTimeTable.getModel().getValueAt(row, 0));
             databasedat.deleteRecord(employeeTimeTable.getValueAt(row, 0).toString());
             ((DefaultTableModel) employeeTimeTable.getModel()).removeRow(row);
         } else {
@@ -298,61 +281,78 @@ public class adminPane extends JPanel {
         //Check to see what employee model to build
         if (employeeList.getSelectedItem().toString().equals("All Employee's")) {
             //Load all employees
-            employeeTimeTable.setModel(databasedat.buildEmployeeTimeModel(dateStart.getText(), dateStop.getText()));
+            employeeTimeTable.setModel(databasedat.getEmployeeTimeModel(dateStart.getText(), dateStop.getText()));
         } else {
             //Load specific employee
-            employeeTimeTable.setModel(databasedat.buildEmployeeSepecificTimeModel(employeeList.getSelectedItem().toString(), dateStart.getText(), dateStop.getText()));
+            employeeTimeTable.setModel(databasedat.getSpecificEmployeeModel(employeeList.getSelectedItem().toString(), dateStart.getText(), dateStop.getText()));
         }
-
-        timeFunctions.setTableModel(employeeTimeTable.getModel());
-        timeFunctions.setJTable(employeeTimeTable);
     }
 
     public String[][] buildExport() {
 
+        TableModel tableModel = employeeTimeTable.getModel();
+
         if (employeeTimeTable.getSelectedRows().length == 0) {
             int rowlist = employeeTimeTable.getRowCount();
             int columnList = employeeTimeTable.getColumnCount();
+
             String[][] time = new String[rowlist][columnList];
+
             for (int i = 0; i < rowlist; i++) {
-                time[i][0] = employeeTimeTable.getValueAt(i, 1).toString();
-                time[i][1] = employeeTimeTable.getValueAt(i, 2).toString();
-                //Check incomplete record
-                Object h = employeeTimeTable.getValueAt(i, 3);
-                if (h == null || h.toString().isEmpty()) {
-                    time[i][2] = "Incomplete";
-                    time[i][3] = "Incomplete";
+                time[i][0] = tableModel.getValueAt(i, 1).toString();
+
+                //Intime
+                time[i][1] = tableModel.getValueAt(i, 2).toString();
+
+
+                //Load outTime
+                if (tableModel.getValueAt(i, 3) != null) {
+                    time[i][2] = tableModel.getValueAt(i, 3).toString();
                 } else {
-                    time[i][2] = h.toString();
-                    time[i][3] = employeeTimeTable.getValueAt(i, 4).toString();
+                    time[i][2] = "Incomplete";
                 }
-                return time;
+
+                //Load totalTime
+                if (tableModel.getValueAt(i, 4) != null) {
+                    time[i][3] = tableModel.getValueAt(i, 4).toString();
+                } else {
+                    time[i][3] = "Incomplete";
+                }
             }
+            return time;
 
         } else {
+
             int[] rowlist = employeeTimeTable.getSelectedRows();
             int columnList = employeeTimeTable.getColumnCount();
+
             String[][] time = new String[rowlist.length][columnList];
+
             for (int i = 0; i < rowlist.length; i++) {
-                time[i][0] = employeeTimeTable.getValueAt(rowlist[i], 1).toString();
-                time[i][1] = employeeTimeTable.getValueAt(rowlist[i], 2).toString();
+                time[i][0] = tableModel.getValueAt(rowlist[i], 1).toString();
+                time[i][1] = tableModel.getValueAt(rowlist[i], 2).toString();
                 //Check incomplete record
-                Object h = employeeTimeTable.getValueAt(rowlist[i], 3);
-                if (h == null || h.toString().isEmpty()) {
+                Object inTime = tableModel.getValueAt(rowlist[i], 3);
+                Object outTime = tableModel.getValueAt(rowlist[i], 4);
+
+                if (outTime != null) {
+                    time[i][2] = inTime.toString();
+                    time[i][3] = outTime.toString();
+                } else {
                     time[i][2] = "Incomplete";
                     time[i][3] = "Incomplete";
-                } else {
-                    time[i][2] = h.toString();
-                    time[i][3] = employeeTimeTable.getValueAt(rowlist[i], 4).toString();
                 }
             }
             return time;
         }
-        return null;
     }
 
     public void runExport() {
         new TimeExport(this);
+    }
+
+    public JTable getTimeTable() {
+        return employeeTimeTable;
     }
 
 }
