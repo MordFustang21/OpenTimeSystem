@@ -52,7 +52,6 @@ public class EmployeePane {
     }
 
     private void createUIComponents() {
-        // TODO: place custom component creation code here
         employeePanel = new JPanel();
     }
 

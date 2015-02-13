@@ -163,7 +163,7 @@ public class Databasedat {
         if (state.equals("IN")) {
             writeTimeQuery = "INSERT INTO Timerecords (name, intime) VALUES ('" + name + "', GETDATE())";
         } else {
-            writeTimeQuery = "INSERT INTO Timerecords (name, outTime) VALUES ('" + name + "', NULL, GETDATE())";
+            writeTimeQuery = "INSERT INTO Timerecords (name, outTime) VALUES ('" + name + "', GETDATE())";
         }
 
         try {

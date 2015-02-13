@@ -46,6 +46,10 @@ public class PinController {
         serverProp.saveProperties(server, port, username, password, database);
     }
 
+    public void saveCompanyName() {
+        serverProp.saveCompanyName(pinScreen.getCompName());
+    }
+
     public void clockIn(char[] pin) {
         if (testConnection()) {
             String employeeName = databasedat.getName(String.valueOf(pin));
@@ -82,7 +86,6 @@ public class PinController {
                     //Timer for the text and pin
                     afterPinCommands();
                 } else {
-
                     Timestamp outDate = new Timestamp(System.currentTimeMillis());
                     System.out.println(employeeName + " OUT @ " + outDate);
 
@@ -98,8 +101,8 @@ public class PinController {
         }
     }
 
-    public int getAdminCredentials(String username, char[] password) {
-        return databasedat.getAdminCredentials(username, String.valueOf(password));
+    public int getAdminCredentials(String username, String password) {
+        return databasedat.getAdminCredentials(username, password);
     }
 
     public void alertNoEmployee() {
@@ -141,8 +144,8 @@ public class PinController {
 
     public void adminLogin() {
         //Check credentials
-        String adminUsername = pinScreen.getAdminLoginUsername().getText();
-        char[] password = pinScreen.getAdminLoginPassword().getPassword();
+        String adminUsername = pinScreen.getAdminLoginUsername();
+        String password = pinScreen.getAdminLoginPassword();
 
         //Tab Count
         int tabCount = pinScreen.getAdminTab().getTabCount();

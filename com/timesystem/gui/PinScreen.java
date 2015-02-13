@@ -9,7 +9,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class PinScreen {
-    private static String version = "1.1.0";
+    private static String version = "1.5.0";
 
     //Load Connector
     PinController pinController = new PinController(this);
@@ -39,8 +39,11 @@ public class PinScreen {
     private JLabel versionLabel;
     private JPanel timeManager;
 
-    public PinScreen() {
 
+    /**
+     * Main UI
+     */
+    public PinScreen() {
 
         pinController.loadServerSettings();
         frame = new JFrame("OpenTimeSystem");
@@ -113,7 +116,7 @@ public class PinScreen {
         compSetSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //serverProp.saveCompanyName(compNameText.getText());
+                pinController.saveCompanyName();
             }
         });
 
@@ -141,6 +144,9 @@ public class PinScreen {
 
     }
 
+    public String getCompName() {
+        return compNameText.getText();
+    }
 
     public JTextField getServerField() {
         return serverField;
@@ -174,12 +180,12 @@ public class PinScreen {
         return nameTime;
     }
 
-    public JTextField getAdminLoginUsername() {
-        return adminLoginUsername;
+    public String getAdminLoginUsername() {
+        return adminLoginUsername.getText();
     }
 
-    public JPasswordField getAdminLoginPassword() {
-        return adminLoginPassword;
+    public String getAdminLoginPassword() {
+        return String.valueOf(adminLoginPassword.getPassword());
     }
 
     public JTabbedPane getAdminTab() {
