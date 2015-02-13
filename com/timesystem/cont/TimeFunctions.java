@@ -1,6 +1,8 @@
 package com.timesystem.cont;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -166,5 +168,32 @@ public class TimeFunctions {
         String convertedValue = timestamp.toString();
 
         return convertedValue;
+    }
+
+    public static DefaultTableModel convertTimeTable(DefaultTableModel tableModel){
+
+        int rowCount = tableModel.getRowCount();
+        for (int i = 0; i < rowCount; i++) {
+            //Load timestamps to string
+            String originalIn = null;
+            String originalOut = null;
+
+            //set converted values
+            try {
+                if (tableModel.getValueAt(i, 2) != null) {
+                    originalIn = tableModel.getValueAt(i, 2).toString();
+                    tableModel.setValueAt(TimeFunctions.convertTimestamp(originalIn), i, 2);
+                }
+
+                if (tableModel.getValueAt(i, 3) != null) {
+                    originalOut = tableModel.getValueAt(i, 3).toString();
+                    tableModel.setValueAt(TimeFunctions.convertTimestamp(originalOut), i, 3);
+                }
+            } catch (ParseException p) {
+                p.printStackTrace();
+            }
+        }
+
+        return tableModel;
     }
 }

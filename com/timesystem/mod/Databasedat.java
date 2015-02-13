@@ -404,60 +404,15 @@ public class Databasedat {
     public DefaultTableModel getEmployeeTimeModel(String inTime, String outTime) {
         String getEmployeeTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime, Notes FROM Timerecords WHERE CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' or outTime IS null or inTime IS null ORDER BY inTime DESC";
 
-        DefaultTableModel timeTable = buildModel(getEmployeeTime);
-        int rowCount = timeTable.getRowCount();
-        for (int i = 0; i < rowCount; i++) {
-            //Load timestamps to string
-            String originalIn = null;
-            String originalOut = null;
+        //Return converted table model
+        return TimeFunctions.convertTimeTable(buildModel(getEmployeeTime));
 
-            //set converted values
-            try {
-                if (timeTable.getValueAt(i, 2) != null) {
-                    originalIn = timeTable.getValueAt(i, 2).toString();
-                    timeTable.setValueAt(TimeFunctions.convertTimestamp(originalIn), i, 2);
-                }
-
-                if (timeTable.getValueAt(i, 3) != null) {
-                    originalOut = timeTable.getValueAt(i, 3).toString();
-                    timeTable.setValueAt(TimeFunctions.convertTimestamp(originalOut), i, 3);
-                }
-            } catch (ParseException p) {
-                p.printStackTrace();
-            }
-        }
-        //Return modified table
-        return timeTable;
     }
 
     public DefaultTableModel getSpecificEmployeeModel(String name, String inTime, String outTime) {
         String getEmployeeSpecificTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime, Notes FROM Timerecords WHERE (CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' OR outTime IS NULL OR inTime IS NULL) AND name = '" + name + "' ORDER BY outTime DESC";
-
-        //TODO: Wrap in own method don't repeat yourself concept
-        DefaultTableModel timeTable = buildModel(getEmployeeSpecificTime);
-        int rowCount = timeTable.getRowCount();
-        for (int i = 0; i < rowCount; i++) {
-            //Load timestamps to string
-            String originalIn = null;
-            String originalOut = null;
-
-            //set converted values
-            try {
-                if (timeTable.getValueAt(i, 2) != null) {
-                    originalIn = timeTable.getValueAt(i, 2).toString();
-                    timeTable.setValueAt(TimeFunctions.convertTimestamp(originalIn), i, 2);
-                }
-
-                if (timeTable.getValueAt(i, 3) != null) {
-                    originalOut = timeTable.getValueAt(i, 3).toString();
-                    timeTable.setValueAt(TimeFunctions.convertTimestamp(originalOut), i, 3);
-                }
-            } catch (ParseException p) {
-                p.printStackTrace();
-            }
-        }
-        //Return modified table
-        return timeTable;
+        
+        return TimeFunctions.convertTimeTable(buildModel(getEmployeeSpecificTime));
     }
 
     public DefaultTableModel builEmployeesTableModel() {
