@@ -411,7 +411,7 @@ public class Databasedat {
 
     public DefaultTableModel getSpecificEmployeeModel(String name, String inTime, String outTime) {
         String getEmployeeSpecificTime = "SELECT recordId, name, inTime, outTime, CONVERT(VARCHAR,(outTime-inTime),108) TotalTime, Notes FROM Timerecords WHERE (CONVERT(date,inTime) BETWEEN '" + inTime + "' AND '" + outTime + "' OR outTime IS NULL OR inTime IS NULL) AND name = '" + name + "' ORDER BY outTime DESC";
-        
+
         return TimeFunctions.convertTimeTable(buildModel(getEmployeeSpecificTime));
     }
 
